@@ -150,6 +150,15 @@
     @media(max-width:640px){.slide-viewer{padding:64px 16px 76px}.slide-stage img{max-height:calc(100% - 72px);width:100%;object-fit:contain}.slide-control{width:42px;height:42px;background:rgba(0,0,0,.55)}.slide-prev{left:12px}.slide-next{right:12px}.slide-close{top:12px;right:12px}}
     @media(prefers-reduced-motion:reduce){.gallery-item img,.slide-control{transition:none}}
   [data-project="concert-hall"] .project-visual img,.modal-image img[src$="concert-hall/cover.png"]{object-fit:contain;background:white}</style>
+<style>
+#slide-stage{overflow:hidden;position:relative}
+#slide-viewport{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;cursor:grab}
+#slide-viewport.dragging{cursor:grabbing}
+#slide-viewport #slide-image{max-height:100%;max-width:100%;width:auto;height:auto;transform-origin:center;flex:none}
+#slide-tools{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;z-index:2}
+#slide-tools button{background:#292929;color:white;border:1px solid #777;border-radius:6px;padding:5px 12px;cursor:pointer}
+#slide-tools span{font-size:12px}
+</style>
 </head>
 <body>
   <header class="topbar">
@@ -316,5 +325,22 @@
     document.querySelectorAll('.filter').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(b=>b.setAttribute('aria-pressed','false'));btn.setAttribute('aria-pressed','true');const filter=btn.dataset.filter;document.querySelectorAll('.project').forEach(card=>card.hidden=filter!=='all'&&card.dataset.category!==filter);document.getElementById("work-empty").hidden=Boolean(document.querySelector(".project:not([hidden])"))}));
     const menu=document.getElementById('menu'),nav=document.getElementById('navlinks');menu.addEventListener('click',()=>{const opened=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(opened));menu.setAttribute('aria-label',opened?'Close navigation':'Open navigation');menu.textContent=opened?'×':'☰'});nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu.setAttribute('aria-expanded','false');menu.setAttribute('aria-label','Open navigation');menu.textContent='☰'}));document.getElementById('year').textContent=new Date().getFullYear();
   </script>
+<script>
+(()=>{const stage=document.getElementById('slide-stage'),img=document.getElementById('slide-image');if(!stage||!img)return;
+const viewport=document.createElement('div');viewport.id='slide-viewport';img.before(viewport);viewport.append(img);img.draggable=false;
+const bar=document.createElement('div');bar.id='slide-tools';bar.innerHTML='<button type="button" aria-label="Zoom out">−</button><span aria-live="polite">100%</span><button type="button" aria-label="Zoom in">+</button><button type="button">Reset</button>';stage.append(bar);
+let z=1,x=0,y=0,drag=null;const label=bar.querySelector('span');
+function draw(){const mx=Math.max(0,(img.offsetWidth*z-viewport.clientWidth)/2),my=Math.max(0,(img.offsetHeight*z-viewport.clientHeight)/2);x=Math.max(-mx,Math.min(mx,x));y=Math.max(-my,Math.min(my,y));img.style.transform='translate('+x+'px,'+y+'px) scale('+z+')';label.textContent=Math.round(z*100)+'%';}
+function reset(){z=1;x=y=0;drag=null;viewport.classList.remove('dragging');draw();}
+function zoom(f,cx=0,cy=0){const next=Math.max(1,Math.min(8,z*f));x=cx-(cx-x)*next/z;y=cy-(cy-y)*next/z;z=next;draw();}
+viewport.addEventListener('wheel',e=>{e.preventDefault();const b=viewport.getBoundingClientRect();zoom(Math.exp(-e.deltaY*.002),e.clientX-b.left-b.width/2,e.clientY-b.top-b.height/2)},{passive:false});
+viewport.addEventListener('pointerdown',e=>{if(z<=1||e.button!==0)return;drag={id:e.pointerId,x:e.clientX,y:e.clientY};viewport.setPointerCapture(e.pointerId);viewport.classList.add('dragging');e.stopPropagation();});
+viewport.addEventListener('pointermove',e=>{if(!drag||drag.id!==e.pointerId)return;x+=e.clientX-drag.x;y+=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;draw();});
+for(const event of ['pointerup','pointercancel','lostpointercapture'])viewport.addEventListener(event,()=>{drag=null;viewport.classList.remove('dragging');});
+viewport.addEventListener('dblclick',reset);const buttons=bar.querySelectorAll('button');buttons[0].onclick=()=>zoom(1/1.25);buttons[1].onclick=()=>zoom(1.25);buttons[2].onclick=reset;
+img.addEventListener('load',reset);new MutationObserver(reset).observe(img,{attributes:true,attributeFilter:['src']});window.addEventListener('resize',draw);
+viewport.addEventListener('touchstart',e=>{if(z>1)e.stopPropagation()},{passive:true});viewport.addEventListener('touchend',e=>{if(z>1)e.stopPropagation()},{passive:true});
+})();
+</script>
 </body>
 </html>
