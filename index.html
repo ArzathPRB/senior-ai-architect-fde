@@ -346,5 +346,19 @@ img.addEventListener('load',reset);new MutationObserver(reset).observe(img,{attr
 viewport.addEventListener('touchstart',e=>{if(z>1)e.stopPropagation()},{passive:true});viewport.addEventListener('touchend',e=>{if(z>1)e.stopPropagation()},{passive:true});
 })();
 </script>
+<style>
+img { -webkit-user-drag: none; -webkit-touch-callout: none; user-select: none; }
+</style>
+<script>
+document.addEventListener('contextmenu', function(e) {
+  if (e.target.closest('img, .gallery-item, #slide-stage, #modal-image-box')) e.preventDefault();
+});
+document.addEventListener('dragstart', function(e) {
+  if (e.target.closest('img')) e.preventDefault();
+});
+document.querySelectorAll('a[download]').forEach(function(a) {
+  if (/\.(png|jpe?g|webp|gif|svg|avif)(?:[?#]|$)/i.test(a.href)) a.remove();
+});
+</script>
 </body>
 </html>
